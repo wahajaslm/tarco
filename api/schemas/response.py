@@ -11,9 +11,9 @@
 # Response flow: Database query -> Pydantic model -> JSON Schema validation -> API response
 # Ensures all responses conform to the strict schema requirements.
 
-from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Union, Dict, Any
-from datetime import date, datetime
+from pydantic import BaseModel, Field
+from typing import Optional, List, Union, Dict
+from datetime import date
 from enum import Enum
 
 
@@ -197,7 +197,7 @@ class ExchangeRate(BaseModel):
 
 
 class Provenance(BaseModel):
-    legal_bases: List[LegalBase] = Field(..., min_items=1)
+    legal_bases: List[LegalBase] = Field(default_factory=list)
 
 
 class Completeness(BaseModel):

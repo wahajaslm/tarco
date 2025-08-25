@@ -68,7 +68,7 @@ class SchemaValidator:
         """
         try:
             # Convert Pydantic model to dict
-            response_dict = model.model_dump(mode='json')
+            response_dict = model.model_dump(mode='json', exclude_none=True)
             
             # Validate against JSON schema
             return self.validate_response(response_dict)

@@ -11,14 +11,17 @@
 # Thresholds: confidence ≥0.62 & margin ≥0.07 for classification
 # Prevents low-confidence classifications and enables clarification requests.
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+"""Confidence calibration utilities for HS classification.
+
+This module uses scikit-learn for logistic regression but imports it lazily so
+the rest of the application can operate without the heavy dependency during
+tests or lightweight deployments.
+"""
+
 import numpy as np
 import pickle
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 from pathlib import Path
 from core.config import settings
 
@@ -31,13 +34,16 @@ class ConfidenceCalibrator:
     def __init__(self, model_path: str = "models/calibrator.pkl"):
         self.model_path = Path(model_path)
         self.model = None
-        self.scaler = StandardScaler()
+        self.scaler = None
         self.is_trained = False
         self._load_model()
     
     def _load_model(self):
         """Load pre-trained model if available."""
         try:
+            from sklearn.linear_model import LogisticRegression
+            from sklearn.preprocessing import StandardScaler
+
             if self.model_path.exists():
                 with open(self.model_path, 'rb') as f:
                     model_data = pickle.load(f)
@@ -47,10 +53,15 @@ class ConfidenceCalibrator:
                 logger.info(f"Loaded pre-trained calibrator from {self.model_path}")
             else:
                 self.model = LogisticRegression(random_state=42, max_iter=1000)
+                self.scaler = StandardScaler()
                 logger.info("Initialized new calibrator model")
         except Exception as e:
             logger.error(f"Failed to load calibrator model: {e}")
+            from sklearn.linear_model import LogisticRegression
+            from sklearn.preprocessing import StandardScaler
+
             self.model = LogisticRegression(random_state=42, max_iter=1000)
+            self.scaler = StandardScaler()
     
     def _save_model(self):
         """Save the trained model."""
@@ -77,29 +88,36 @@ class ConfidenceCalibrator:
         try:
             if len(features) != len(labels):
                 raise ValueError("Features and labels must have the same length")
-            
+
+            from sklearn.model_selection import train_test_split
+            from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+            from sklearn.preprocessing import StandardScaler
+
             # Convert to numpy arrays
             X = np.array(features)
             y = np.array(labels)
-            
+
             # Split data
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=0.2, random_state=42, stratify=y
             )
-            
+
             # Scale features
+            self.scaler = self.scaler or StandardScaler()
             X_train_scaled = self.scaler.fit_transform(X_train)
             X_test_scaled = self.scaler.transform(X_test)
-            
+
             # Train model
             self.model.fit(X_train_scaled, y_train)
-            
+
             # Evaluate
             y_pred = self.model.predict(X_test_scaled)
             accuracy = accuracy_score(y_test, y_pred)
-            precision, recall, f1, _ = precision_recall_fscore_support(y_test, y_pred, average='binary')
-            
-            logger.info(f"Calibrator training results:")
+            precision, recall, f1, _ = precision_recall_fscore_support(
+                y_test, y_pred, average="binary"
+            )
+
+            logger.info("Calibrator training results:")
             logger.info(f"  Accuracy: {accuracy:.3f}")
             logger.info(f"  Precision: {precision:.3f}")
             logger.info(f"  Recall: {recall:.3f}")

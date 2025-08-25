@@ -12,7 +12,7 @@
 # This is the core ML pipeline that enables intelligent HS classification
 # with confidence calibration and abstention when uncertain.
 
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 import logging
 from rag.retrieval import vector_retriever
 from rag.reranker import get_reranker
@@ -27,8 +27,13 @@ class HSClassificationPipeline:
     
     def __init__(self):
         self.retriever = vector_retriever
-        self.reranker = get_reranker()
+        self.reranker = None
         self.calibrator = calibrator
+
+    def _get_reranker(self):
+        if self.reranker is None:
+            self.reranker = get_reranker()
+        return self.reranker
     
     def classify(self, query: str, filter_conditions: Optional[Dict] = None) -> Dict[str, Any]:
         """
@@ -52,14 +57,14 @@ class HSClassificationPipeline:
                 return self._create_abstain_result("no_candidates_retrieved")
             
             # Step 2: Rerank candidates
-            reranked_candidates = self.reranker.rerank_with_metadata(query, candidates)
+            reranked_candidates = self._get_reranker().rerank_with_metadata(query, candidates)
             
             if not reranked_candidates:
                 logger.warning("No candidates after reranking")
                 return self._create_abstain_result("no_candidates_after_reranking")
             
             # Step 3: Extract confidence features
-            confidence_features = self.reranker.get_confidence_features(query, reranked_candidates)
+            confidence_features = self._get_reranker().get_confidence_features(query, reranked_candidates)
             
             if not confidence_features or len(confidence_features) < 5:
                 logger.warning("Insufficient confidence features")
@@ -153,7 +158,7 @@ class HSClassificationPipeline:
             # Create clarifying question
             question = {
                 'id': f"cq_{hash(query) % 10000}",
-                'question': f"Which of the following best describes your product?",
+                'question': "Which of the following best describes your product?",
                 'options': candidates_info
             }
             
