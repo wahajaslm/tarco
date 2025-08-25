@@ -17,10 +17,9 @@ import zipfile
 import pandas as pd
 import logging
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List
 from sqlalchemy.orm import Session
 from db.session import get_db
-from db.models import Base
 
 logger = logging.getLogger(__name__)
 

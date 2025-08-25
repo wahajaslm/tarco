@@ -11,7 +11,7 @@
 # Safety flow: LLM prompt -> Safety instructions -> Factual response -> Validation
 # Ensures LLM only paraphrases existing data, never invents new facts or numbers.
 
-from typing import Dict, Any, List, Optional
+from typing import Any, List, Optional
 import logging
 from api.schemas.response import TradeComplianceResponse, AnnotationsLLM, CertificateExplanation, SafetyInfo
 import ollama

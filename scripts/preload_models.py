@@ -6,7 +6,6 @@ This script downloads all required models and caches them in the container.
 
 import os
 import sys
-from pathlib import Path
 
 # Add the app directory to Python path
 sys.path.insert(0, '/app')
@@ -26,15 +25,15 @@ def preload_models():
         
         # Pre-download embedding model
         print("Downloading embedding model...")
-        embedding_model = SentenceTransformer(
+        SentenceTransformer(
             "sentence-transformers/all-MiniLM-L6-v2",
             cache_folder=cache_dir
         )
         print("Embedding model downloaded successfully")
-        
+
         # Pre-download reranker model
         print("Downloading reranker model...")
-        reranker_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
         print("Reranker model downloaded successfully")
         
         print("All models pre-downloaded successfully!")

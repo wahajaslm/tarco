@@ -15,12 +15,10 @@ Vector index building for RAG operations.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 from db.models import GoodsNomenclature, LegalBases, MeasuresImport, MeasuresExport
 from rag.retrieval import vector_retriever
-from rag.embeddings import get_embedding_model
-from core.config import settings
 
 logger = logging.getLogger(__name__)
 
