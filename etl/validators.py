@@ -16,11 +16,12 @@
 Data validation for ETL pipeline consistency and integrity checks.
 """
 
-import pandas as pd
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime
 import re
+from datetime import datetime
+from typing import Any, Dict, List, Tuple
+
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 

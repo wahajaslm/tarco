@@ -8,24 +8,27 @@
 # Clarification flow: Clarification question -> User answer -> Reclassification -> Response
 # This enables conversational interfaces with confidence-based clarification when uncertain.
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+import json
 import logging
 
-from db.session import get_db
-from api.schemas.request import ChatResolveRequest, ChatAnswerRequest, NeedsClarificationResponse
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from redis.asyncio import Redis
+
+from api.schemas.request import ChatAnswerRequest, ChatResolveRequest, NeedsClarificationResponse
 from api.schemas.response import ClassificationMeta, ClassificationMethod
 from api.schemas.validation import validate_trade_response
+from core.config import settings
+from db.session import get_db
+from rag.pipeline import hs_pipeline
 from services.deterministic_builder import create_deterministic_builder
 from services.query_extractor import extract_query_parameters
-from rag.pipeline import hs_pipeline
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# In-memory storage for clarification sessions (in production, use Redis)
-clarification_sessions = {}
+redis_client = Redis.from_url(settings.redis_url, decode_responses=True)
 
 
 @router.post("/resolve")
@@ -74,13 +77,18 @@ async def resolve_chat_message(
                 classification_result.get('top_candidates', [])
             )
             
-            # Store session for later use
-            session_id = f"session_{hash(request.message) % 10000}"
-            clarification_sessions[session_id] = {
-                'extracted_params': extracted_params,
-                'classification_result': classification_result,
-                'message': request.message
-            }
+            # Store session for later use in Redis keyed by question ID
+            question_id = clarifying_question["id"]
+            await redis_client.set(
+                f"clarify:{question_id}",
+                json.dumps(
+                    {
+                        'extracted_params': extracted_params,
+                        'classification_result': classification_result,
+                        'message': request.message,
+                    }
+                ),
+            )
             
             return NeedsClarificationResponse(
                 query_parameters=extracted_params,
@@ -140,21 +148,15 @@ async def answer_clarification(
     try:
         logger.info(f"Chat answer request: question_id={request.question_id}, option={request.selected_option}")
         
-        # Find the clarification session
-        session = None
-        session_id = None
-        
-        for sid, sess in clarification_sessions.items():
-            if sess.get('clarifying_question', {}).get('id') == request.question_id:
-                session = sess
-                session_id = sid
-                break
-        
-        if not session:
+        # Retrieve clarification session from Redis
+        session_key = f"clarify:{request.question_id}"
+        session_data = await redis_client.get(session_key)
+        if not session_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Clarification session not found"
             )
+        session = json.loads(session_data)
         
         # Classify with clarification
         classification_result = hs_pipeline.classify_with_clarification(
@@ -188,8 +190,7 @@ async def answer_clarification(
         }
         
         # Clean up session
-        if session_id:
-            del clarification_sessions[session_id]
+        await redis_client.delete(session_key)
         
         # Validate response
         validate_trade_response(response)

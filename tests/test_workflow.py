@@ -19,12 +19,13 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import numpy as np
 
+from api.routers import chat
 from db.models import Base, GoodsNomenclature, MeasuresImport, VatRates
 from db.session import get_db
-from rag.retrieval import vector_retriever
-from rag.calibrator import calibrator
-from core.config import settings
 from rag import embeddings
+from rag.calibrator import calibrator
+from rag.retrieval import vector_retriever
+from core.config import settings
 
 # Test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -42,6 +43,45 @@ def override_get_db():
 
 
 client: TestClient
+
+
+def test_vector_retriever_unique_ids():
+    """Ensure consecutive adds do not overwrite existing points."""
+
+    class DummyEmbeddingModel:
+        def encode_batch(self, texts):
+            return np.ones((len(texts), settings.vector_dimension))
+
+    embeddings.get_embedding_model = lambda: DummyEmbeddingModel()
+    import rag.retrieval as retrieval_module
+    retrieval_module.get_embedding_model = lambda: DummyEmbeddingModel()
+
+    retriever = retrieval_module.VectorRetriever(collection_name="unique_test")
+    retriever.add_documents([
+        {"content": "doc1", "metadata": {"id": 1}},
+        {"content": "doc2", "metadata": {"id": 2}},
+    ])
+    retriever.add_documents([
+        {"content": "doc3", "metadata": {"id": 3}},
+        {"content": "doc4", "metadata": {"id": 4}},
+    ])
+    count = retriever.client.count(retriever.collection_name).count
+    assert count == 4
+
+
+def test_explainer_llm_timeout():
+    """LLM timeouts should return fallback message."""
+    from services.explainer import ExplainerService
+    import httpx
+
+    service = ExplainerService()
+
+    def mock_generate(*args, **kwargs):
+        raise httpx.TimeoutException("timeout")
+
+    service.client.generate = mock_generate
+    result = service._call_llm("hello")
+    assert result == "LLM call timed out"
 
 
 class TestCottonHoodieWorkflow:
@@ -161,6 +201,21 @@ class TestCottonHoodieWorkflow:
         app.dependency_overrides[get_db] = override_get_db
         global client
         client = TestClient(app)
+
+        class FakeRedis:
+            def __init__(self):
+                self.store = {}
+
+            async def set(self, key, value):
+                self.store[key] = value
+
+            async def get(self, key):
+                return self.store.get(key)
+
+            async def delete(self, key):
+                self.store.pop(key, None)
+
+        chat.redis_client = FakeRedis()
     
     def test_health_endpoint(self):
         """Test health endpoint."""

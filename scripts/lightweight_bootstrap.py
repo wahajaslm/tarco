@@ -13,14 +13,11 @@
 Lightweight bootstrap script for Trade Compliance API setup.
 """
 
-import os
-import sys
-import logging
 import argparse
-from pathlib import Path
-from typing import List, Dict, Any
+import logging
 import subprocess
-import time
+import sys
+from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
