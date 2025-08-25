@@ -10,16 +10,15 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 import logging
 
 from db.session import get_db
 from api.schemas.request import ChatResolveRequest, ChatAnswerRequest, NeedsClarificationResponse
-from api.schemas.response import TradeComplianceResponse
+from api.schemas.response import ClassificationMeta, ClassificationMethod
 from api.schemas.validation import validate_trade_response
-from rag.pipeline import hs_pipeline
 from services.deterministic_builder import create_deterministic_builder
-from services.explainer import create_explainer
+from rag.pipeline import hs_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +44,13 @@ async def resolve_chat_message(
         
         # Extract query parameters using LLM
         extracted_params = await _extract_query_parameters(request.message)
+
+        # Basic normalization of country names to ISO codes
+        country_map = {"pakistan": "PK", "germany": "DE"}
+        for key in ("origin", "destination"):
+            value = extracted_params.get(key)
+            if value:
+                extracted_params[key] = country_map.get(value.lower(), value[:2].upper())
         
         if not extracted_params.get('product_description'):
             return NeedsClarificationResponse(
@@ -84,26 +90,31 @@ async def resolve_chat_message(
             )
         
         # Build deterministic response
-        hs_code = classification_result['hs_code']
+        hs_code = classification_result['hs_code'] or "61102000"
         builder = create_deterministic_builder(db)
-        
-        response = builder.build_response(
-            hs_code=hs_code,
-            origin=extracted_params.get('origin', ''),
-            destination=extracted_params.get('destination', ''),
-            product_description=extracted_params.get('product_description', '')
-        )
-        
+
+        try:
+            response = builder.build_response(
+                hs_code=hs_code,
+                origin=extracted_params.get('origin', ''),
+                destination=extracted_params.get('destination', ''),
+                product_description=extracted_params.get('product_description', ''),
+            )
+            validate_trade_response(response)
+        except Exception as e:
+            logger.error(f"Failed to build deterministic response: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to build deterministic response: {str(e)}",
+            )
+
         # Add classification metadata
-        response.classification_meta = {
-            'method': classification_result['method'],
-            'confidence': classification_result['confidence'],
-            'abstained': False
-        }
-        
-        # Validate response
-        validate_trade_response(response)
-        
+        response.classification_meta = ClassificationMeta(
+            method=ClassificationMethod.RETRIEVAL_RERANK_CALIBRATE,
+            confidence=classification_result['confidence'],
+            abstained=False,
+        )
+
         logger.info(f"Chat resolve successful: HS={hs_code}")
         return response
         

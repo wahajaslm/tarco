@@ -12,8 +12,6 @@
 # Loaded at startup and used by all services for consistent configuration.
 
 from pydantic_settings import BaseSettings
-from typing import Optional
-import os
 
 
 class Settings(BaseSettings):
@@ -28,7 +26,7 @@ class Settings(BaseSettings):
     llm_model: str = "llama2:7b"
     
     # Vector Search (Lightweight)
-    qdrant_url: str = "http://localhost:6333"
+    qdrant_url: str = ":memory:"
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     vector_dimension: int = 384

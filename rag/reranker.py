@@ -10,8 +10,14 @@
 # Provides more accurate ranking than vector similarity alone.
 # Features extracted here are used for confidence calibration.
 
-from sentence_transformers import CrossEncoder
-from typing import List, Dict, Any, Tuple
+"""Cross-encoder based reranker for the RAG pipeline.
+
+Similar to the embedding utilities, we avoid importing heavy ML dependencies at
+module import time. The actual cross-encoder model is loaded lazily when
+instantiating :class:`Reranker`.
+"""
+
+from typing import List, Dict, Any
 import numpy as np
 import logging
 from core.config import settings
@@ -31,6 +37,8 @@ class Reranker:
         """Load the reranker model."""
         try:
             logger.info(f"Loading reranker model: {self.model_name}")
+            from sentence_transformers import CrossEncoder
+
             self.model = CrossEncoder(self.model_name)
             logger.info("Reranker model loaded successfully")
         except Exception as e:

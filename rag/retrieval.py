@@ -11,9 +11,8 @@
 # Returns candidates for reranking and classification.
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, SearchRequest, Filter, FieldCondition, MatchValue
-from typing import List, Dict, Any, Optional, Tuple
-import numpy as np
+from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, MatchValue, PointStruct
+from typing import List, Dict, Any, Optional
 import logging
 from rag.embeddings import get_embedding_model
 from core.config import settings
@@ -22,44 +21,44 @@ logger = logging.getLogger(__name__)
 
 
 class VectorRetriever:
-    """Vector retrieval using Qdrant and BAAI/bge-m3 embeddings."""
-    
+    """Vector retrieval using Qdrant and embedding model."""
+
     def __init__(self, collection_name: str = "nomenclature_chunks"):
         self.collection_name = collection_name
-        # Parse Qdrant URL from settings
-        qdrant_url = settings.qdrant_url.replace("http://", "").replace("https://", "")
-        if ":" in qdrant_url:
-            host, port = qdrant_url.split(":")
-            port = int(port)
+        self.embedding_model = None
+
+        qdrant_url = settings.qdrant_url
+        if qdrant_url in {":memory:", "memory", "memory://"}:
+            self.client = QdrantClient(":memory:")
         else:
-            host = qdrant_url
-            port = 6333
-        self.client = QdrantClient(host, port=port)
+            parsed = qdrant_url.replace("http://", "").replace("https://", "")
+            if ":" in parsed:
+                host, port = parsed.split(":")
+                port = int(port)
+            else:
+                host = parsed
+                port = 6333
+            self.client = QdrantClient(host, port=port)
+
         self._ensure_collection_exists()
-    
+
     def _ensure_collection_exists(self):
         """Ensure the collection exists with proper configuration."""
-        try:
-            collections = self.client.get_collections()
-            collection_names = [c.name for c in collections.collections]
-            
-            if self.collection_name not in collection_names:
-                logger.info(f"Creating collection: {self.collection_name}")
-                self.client.create_collection(
-                    collection_name=self.collection_name,
-                    vectors_config=VectorParams(
-                        size=embedding_model.get_embedding_dimension(),
-                        distance=Distance.COSINE
-                    )
-                )
-                logger.info(f"Collection {self.collection_name} created successfully")
-            else:
-                logger.info(f"Collection {self.collection_name} already exists")
-                
-        except Exception as e:
-            logger.warning(f"Failed to ensure collection exists: {e}")
-            logger.warning("Vector search will not be available until Qdrant is properly connected")
-            # Don't raise the exception, just log it
+        collections = self.client.get_collections()
+        collection_names = [c.name for c in collections.collections]
+
+        if self.collection_name not in collection_names:
+            logger.info(f"Creating collection: {self.collection_name}")
+            self.client.create_collection(
+                collection_name=self.collection_name,
+                vectors_config=VectorParams(
+                    size=settings.vector_dimension,
+                    distance=Distance.COSINE,
+                ),
+            )
+            logger.info(f"Collection {self.collection_name} created successfully")
+        else:
+            logger.info(f"Collection {self.collection_name} already exists")
     
     def add_documents(self, documents: List[Dict[str, Any]]) -> None:
         """
@@ -77,17 +76,15 @@ class VectorRetriever:
             metadatas = [doc.get('metadata', {}) for doc in documents]
             
             # Generate embeddings
-            embeddings = embedding_model.encode_batch(texts)
+            model = self._get_embedding_model()
+            embeddings = model.encode_batch(texts)
             
             # Prepare points for Qdrant
             points = []
             for i, (embedding, metadata) in enumerate(zip(embeddings, metadatas)):
-                point = {
-                    'id': i,
-                    'vector': embedding.tolist(),
-                    'payload': metadata
-                }
-                points.append(point)
+                points.append(
+                    PointStruct(id=i, vector=embedding.tolist(), payload=metadata)
+                )
             
             # Upload to Qdrant
             self.client.upsert(
@@ -117,24 +114,16 @@ class VectorRetriever:
             top_k = top_k or settings.top_k_retrieval
             
             # Generate query embedding
-            query_embedding = get_embedding_model().encode(query)
-            
-            # Build search request
-            search_request = SearchRequest(
-                vector=query_embedding.tolist(),
-                limit=top_k,
-                with_payload=True,
-                with_vectors=False
-            )
-            
-            # Add filters if provided
-            if filter_conditions:
-                search_request.filter = self._build_filter(filter_conditions)
+            model = self._get_embedding_model()
+            query_embedding = model.encode(query)
             
             # Perform search
             search_results = self.client.search(
                 collection_name=self.collection_name,
-                search_request=search_request
+                query_vector=query_embedding.tolist(),
+                limit=top_k,
+                with_payload=True,
+                query_filter=self._build_filter(filter_conditions) if filter_conditions else None,
             )
             
             # Format results
@@ -200,10 +189,11 @@ class VectorRetriever:
             logger.error(f"Failed to delete collection: {e}")
             raise
 
+    def _get_embedding_model(self):
+        if self.embedding_model is None:
+            self.embedding_model = get_embedding_model()
+        return self.embedding_model
+
 
 # Global retriever instance
-try:
-    vector_retriever = VectorRetriever()
-except Exception as e:
-    logger.warning(f"Failed to initialize vector retriever: {e}")
-    vector_retriever = None
+vector_retriever = VectorRetriever()

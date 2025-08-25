@@ -12,12 +12,11 @@
 # Enforces the strict boundary: database = facts, LLM = explanations only
 
 from typing import Dict, Any, List, Optional, Tuple
-from datetime import date, datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from db.models import (
     GoodsNomenclature, MeasuresImport, MeasuresExport, MeasureConditions,
-    Geographies, VatRates, ExchangeRates, LegalBases, ReachMap, Footnotes, Box44
+    VatRates, ExchangeRates, ReachMap
 )
 # Import Pydantic models inside methods to avoid circular imports
 # from api.schemas.response import (
@@ -61,7 +60,7 @@ class DeterministicBuilder:
             logger.info(f"Database connection test result: {test_query}")
             
             # Import Pydantic models
-            from api.schemas.response import TradeComplianceResponse, QueryParameters, DeterministicValues
+            from api.schemas.response import TradeComplianceResponse, QueryParameters
             
             # Build query parameters
             logger.info("Creating QueryParameters...")
@@ -104,9 +103,8 @@ class DeterministicBuilder:
         """Build deterministic values from database."""
         try:
             # Import Pydantic models
-            from api.schemas.response import (
-                DeterministicValues, ImportMeasure, 
-                ExportMeasure, VatRate, ExchangeRate, MeasureCondition,
+            from api.schemas.response import (  # noqa: F401
+                DeterministicValues, VatRate, ExchangeRate, MeasureCondition,
                 ApplicableRateResolution, Completeness, Unknown, Provenance
             )
             
@@ -175,7 +173,7 @@ class DeterministicBuilder:
                 item = self.db.query(GoodsNomenclature).filter(
                     GoodsNomenclature.goods_code == current_code
                 ).first()
-                
+
                 if item:
                     nomenclature_items.append(GoodsNomenclatureItem(
                         goods_code=item.goods_code,
@@ -185,11 +183,10 @@ class DeterministicBuilder:
                         validity_end_date=item.valid_to.date() if item.valid_to else None,
                         is_leaf=item.is_leaf
                     ))
-                
-                # Move to parent level (remove last 2 digits)
-                current_code = current_code[:-2] if len(current_code) > 4 else current_code
-                if current_code == hs_code:  # Prevent infinite loop
+
+                if len(current_code) <= 4:
                     break
+                current_code = current_code[:-2]
             
             return nomenclature_items
             
@@ -491,27 +488,30 @@ class DeterministicBuilder:
                        export_measures: List[Any]) -> Any:
         """Get legal bases for provenance."""
         try:
-            # Import the correct types
             from api.schemas.response import Provenance, LegalBase
-            legal_bases = []
-            
-            # Collect unique legal bases from measures
+
+            legal_bases: List[LegalBase] = []
             seen_bases = set()
-            
+
             for measure in import_measures + export_measures:
-                base_id = measure.legal_base.id
-                if base_id not in seen_bases:
-                    legal_bases.append(LegalBase(
-                        id=base_id,
-                        title=measure.legal_base.title
-                    ))
+                base = getattr(measure, "legal_base", None)
+                if base is None and isinstance(measure, dict):
+                    base = measure.get("legal_base")
+                if not base:
+                    continue
+
+                base_id = getattr(base, "id", None) or (base.get("id") if isinstance(base, dict) else None)
+                title = getattr(base, "title", None) or (base.get("title") if isinstance(base, dict) else None)
+
+                if base_id and base_id not in seen_bases:
+                    legal_bases.append(LegalBase(id=base_id, title=title or ""))
                     seen_bases.add(base_id)
-            
+
             return Provenance(legal_bases=legal_bases)
-            
+
         except Exception as e:
             logger.error(f"Failed to get provenance: {e}")
-            return Provenance(legal_bases=[])
+            return Provenance()
 
 
 # Factory function
