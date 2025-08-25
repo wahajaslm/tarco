@@ -48,14 +48,6 @@ try:
 except Exception as e:
     logger.warning(f"Failed to include deterministic router: {e}")
 
-# Include chat router
-try:
-    from api.routers import chat
-    app.include_router(chat.router, prefix=f"{settings.api_v1_prefix}/chat")
-    logger.info("Chat router included")
-except Exception as e:
-    logger.warning(f"Failed to include chat router: {e}")
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host=settings.api_host, port=settings.api_port)
