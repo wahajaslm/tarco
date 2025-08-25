@@ -225,6 +225,10 @@ python -m pytest tests/test_workflow.py -v
 python -m pytest tests/ --cov=. --cov-report=html
 ```
 
+The test suite stubs out calls to the Ollama LLM so no external model is
+invoked. See `tests/test_query_parameters.py` for the mocking helper used to
+return deterministic JSON payloads.
+
 ### Test the Cotton Hoodie Workflow
 ```bash
 # This test validates the complete workflow from the requirements
