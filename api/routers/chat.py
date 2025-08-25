@@ -10,7 +10,6 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Dict, Any
 import logging
 
 from db.session import get_db
@@ -18,6 +17,7 @@ from api.schemas.request import ChatResolveRequest, ChatAnswerRequest, NeedsClar
 from api.schemas.response import ClassificationMeta, ClassificationMethod
 from api.schemas.validation import validate_trade_response
 from services.deterministic_builder import create_deterministic_builder
+from services.query_extractor import extract_query_parameters
 from rag.pipeline import hs_pipeline
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ async def resolve_chat_message(
         logger.info(f"Chat resolve request: {request.message[:100]}...")
         
         # Extract query parameters using LLM
-        extracted_params = await _extract_query_parameters(request.message)
+        extracted_params = await extract_query_parameters(request.message)
 
         # Basic normalization of country names to ISO codes
         country_map = {"pakistan": "PK", "germany": "DE"}
@@ -207,58 +207,3 @@ async def answer_clarification(
         )
 
 
-async def _extract_query_parameters(message: str) -> Dict[str, Any]:
-    """
-    Extract query parameters from user message using LLM.
-    
-    Args:
-        message: User message
-        
-    Returns:
-        Dictionary with extracted parameters
-    """
-    try:
-        # Simple extraction logic (in production, use LLM)
-        # This is a placeholder - implement proper LLM extraction
-        extracted = {
-            'origin': '',
-            'destination': '',
-            'product_description': '',
-            'quantity': None
-        }
-        
-        # Basic keyword extraction
-        message_lower = message.lower()
-        
-        # Extract origin/destination from common patterns
-        if 'from' in message_lower and 'to' in message_lower:
-            parts = message_lower.split('from')
-            if len(parts) > 1:
-                to_parts = parts[1].split('to')
-                if len(to_parts) > 1:
-                    extracted['origin'] = to_parts[0].strip()
-                    extracted['destination'] = to_parts[1].strip()
-        
-        # Extract product description (everything between import/export and from/to)
-        if 'import' in message_lower:
-            import_part = message_lower.split('import')[1]
-            if 'from' in import_part:
-                product_part = import_part.split('from')[0]
-                extracted['product_description'] = product_part.strip()
-        
-        # Extract quantity
-        import re
-        quantity_match = re.search(r'(\d+)\s+', message)
-        if quantity_match:
-            extracted['quantity'] = int(quantity_match.group(1))
-        
-        return extracted
-        
-    except Exception as e:
-        logger.error(f"Query parameter extraction failed: {e}")
-        return {
-            'origin': '',
-            'destination': '',
-            'product_description': '',
-            'quantity': None
-        }
