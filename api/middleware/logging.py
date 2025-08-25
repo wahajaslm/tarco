@@ -62,9 +62,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                         # Try to parse as JSON
                         try:
                             body = json.loads(body.decode())
-                        except:
+                        except Exception:
                             body = body.decode()[:1000]  # Truncate if not JSON
-                except:
+                except Exception:
                     pass
             
             logger.info(

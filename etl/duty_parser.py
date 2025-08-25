@@ -17,8 +17,7 @@ Duty parser for parsing various duty formats in trade compliance data.
 
 import re
 import logging
-from typing import List, Dict, Any, Optional, Union
-from decimal import Decimal
+from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 

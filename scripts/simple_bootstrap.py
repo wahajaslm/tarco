@@ -13,21 +13,18 @@
 Simplified bootstrap script for Trade Compliance API setup and data processing.
 """
 
-import os
 import sys
 import logging
 import argparse
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List
 import subprocess
-import time
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from db.session import init_db, get_db
-from core.config import settings
+from db.session import init_db, get_db  # noqa: E402
 
 # Configure logging
 logging.basicConfig(

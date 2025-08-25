@@ -17,12 +17,12 @@ Transform staging data to canonical database schema.
 
 import pandas as pd
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List
 from sqlalchemy.orm import Session
 from datetime import datetime
 from db.models import (
     GoodsNomenclature, MeasuresImport, MeasuresExport, Geographies,
-    VatRates, LegalBases, Footnotes, Box44, ExchangeRates, ReachMap
+    VatRates, LegalBases
 )
 from etl.duty_parser import parse_duty_components
 

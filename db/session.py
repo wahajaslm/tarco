@@ -11,7 +11,7 @@
 # Health checks: check_db_connection() -> Monitor connectivity
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from core.config import settings
 import logging

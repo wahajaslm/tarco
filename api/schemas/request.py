@@ -12,7 +12,6 @@
 
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Literal
-from datetime import date
 
 
 class DeterministicRequest(BaseModel):
