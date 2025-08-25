@@ -16,21 +16,20 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import json
 from datetime import datetime
+import numpy as np
 
-from api.main import app
-from db.models import Base
+from db.models import Base, GoodsNomenclature, MeasuresImport, VatRates
 from db.session import get_db
-from api.schemas.validation import validate_trade_response
+from rag.retrieval import vector_retriever
+from rag.calibrator import calibrator
+from core.config import settings
+from rag import embeddings
 
 # Test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create test tables
-Base.metadata.create_all(bind=engine)
 
 
 def override_get_db():
@@ -42,8 +41,7 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
+client: TestClient
 
 
 class TestCottonHoodieWorkflow:
@@ -51,9 +49,118 @@ class TestCottonHoodieWorkflow:
     
     def setup_method(self):
         """Setup test data."""
-        # This would normally populate the database with test data
-        # For now, we'll test the API structure and validation
-        pass
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+        db = TestingSessionLocal()
+
+        # Populate minimal goods nomenclature hierarchy
+        db.add_all([
+            GoodsNomenclature(
+                goods_code="6110",
+                description="Sweaters, pullovers",
+                level=4,
+                valid_from=datetime(2020, 1, 1),
+                is_leaf=False,
+            ),
+            GoodsNomenclature(
+                goods_code="611020",
+                description="Of cotton",
+                level=6,
+                valid_from=datetime(2020, 1, 1),
+                is_leaf=False,
+            ),
+            GoodsNomenclature(
+                goods_code="61102000",
+                description="Cotton hoodies",
+                level=8,
+                valid_from=datetime(2020, 1, 1),
+                is_leaf=True,
+            ),
+        ])
+
+        # Import measure with ERGA OMNES rate
+        db.add(
+            MeasuresImport(
+                goods_code="61102000",
+                origin_group="ERGA OMNES",
+                measure_type="000",
+                duty_components=[{"type": "ad_valorem", "value": 12.0, "unit": "percent"}],
+                legal_base_id="LB001",
+                legal_base_title="Base Regulation",
+                valid_from=datetime(2020, 1, 1),
+            )
+        )
+
+        # VAT rate for destination
+        db.add(
+            VatRates(
+                country_code="DE",
+                standard_rate=19.0,
+                reduced_rate_1=None,
+                valid_from=datetime(2020, 1, 1),
+            )
+        )
+
+        db.commit()
+        db.close()
+
+        # Use dummy embedding model to avoid external downloads
+        class DummyEmbeddingModel:
+            def encode_batch(self, texts):
+                return np.ones((len(texts), settings.vector_dimension))
+
+            def encode(self, text):
+                return np.ones(settings.vector_dimension)
+
+            def get_embedding_dimension(self):
+                return settings.vector_dimension
+
+        embeddings.get_embedding_model = lambda: DummyEmbeddingModel()
+        import rag.retrieval as retrieval_module
+        retrieval_module.get_embedding_model = lambda: DummyEmbeddingModel()
+
+        # Seed vector store with goods description
+        vector_retriever.add_documents(
+            [
+                {
+                    "content": "cotton hoodie",
+                    "metadata": {"goods_code": "61102000", "description": "Cotton hoodies"},
+                },
+                {
+                    "content": "silk scarf",
+                    "metadata": {"goods_code": "62141000", "description": "Silk scarf"},
+                },
+            ]
+        )
+
+        # Patch pipeline components for testing
+        class DummyReranker:
+            def rerank_with_metadata(self, query, documents, top_k=None):
+                for doc in documents:
+                    if doc.get("metadata", {}).get("goods_code") == "61102000":
+                        doc["rerank_score"] = 2.0
+                    else:
+                        doc["rerank_score"] = 1.0
+                return sorted(documents, key=lambda d: d["rerank_score"], reverse=True)
+
+            def get_confidence_features(self, query, top_results):
+                scores = [doc["rerank_score"] for doc in top_results]
+                if len(scores) < 2:
+                    scores.append(0.0)
+                gap = scores[0] - scores[1]
+                return [scores[0], scores[1], gap, float(np.mean(scores)), float(np.std(scores))]
+
+        from rag.pipeline import hs_pipeline
+
+        hs_pipeline.reranker = DummyReranker()
+        calibrator.get_confidence_and_abstain = lambda features, margin: (0.9, False)
+
+        from api.main import app
+
+        app.dependency_overrides[get_db] = override_get_db
+        global client
+        client = TestClient(app)
     
     def test_health_endpoint(self):
         """Test health endpoint."""
@@ -71,19 +178,14 @@ class TestCottonHoodieWorkflow:
             "destination": "DE",
             "product_description": "cotton hoodies"
         }
-        
+
         response = client.post("/api/v1/deterministic-json", json=request_data)
-        
-        # Note: This will fail without actual data, but we can test the structure
-        if response.status_code == 500:
-            # Expected without test data
-            assert "Failed to build deterministic response" in response.json()["detail"]
-        else:
-            # If we had test data, validate the response
-            data = response.json()
-            assert "query_parameters" in data
-            assert "deterministic_values" in data
-            assert data["query_parameters"]["hs_code"] == "61102000"
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "query_parameters" in data
+        assert "deterministic_values" in data
+        assert data["query_parameters"]["hs_code"] == "61102000"
     
     def test_chat_resolve_endpoint_structure(self):
         """Test chat resolve endpoint structure."""
@@ -165,8 +267,10 @@ class TestCottonHoodieWorkflow:
         }
         
         # This should pass validation
+        from api.schemas.validation import validate_response_dict
+
         try:
-            validate_trade_response(test_response)
+            validate_response_dict(test_response)
             assert True  # Validation passed
         except Exception as e:
             pytest.fail(f"Schema validation failed: {e}")

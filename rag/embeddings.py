@@ -7,9 +7,13 @@
 #
 # Embedding flow: Text input -> BAAI/bge-m3 model -> Normalized embeddings -> Vector store
 # This is the first step in the RAG pipeline: text -> vector representation
-# Used for both indexing nomenclature data and query encoding.
+"""Embedding utilities for the RAG pipeline.
 
-from sentence_transformers import SentenceTransformer
+This module intentionally avoids importing heavy ML libraries at import time so
+that the application can start even when optional dependencies are missing. The
+actual model is loaded lazily inside :meth:`EmbeddingModel._load_model`.
+"""
+
 from typing import List, Union
 import numpy as np
 import logging
@@ -30,9 +34,11 @@ class EmbeddingModel:
         """Load the embedding model."""
         try:
             logger.info(f"Loading embedding model: {self.model_name}")
+            from sentence_transformers import SentenceTransformer
+
             self.model = SentenceTransformer(
                 self.model_name,
-                cache_folder=settings.model_cache_dir
+                cache_folder=settings.model_cache_dir,
             )
             logger.info("Embedding model loaded successfully")
         except Exception as e:

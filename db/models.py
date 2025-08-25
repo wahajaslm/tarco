@@ -15,9 +15,6 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, JSON, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSONB
-from datetime import datetime
-from typing import Optional
 
 Base = declarative_base()
 
@@ -50,7 +47,7 @@ class MeasuresImport(Base):
     goods_code = Column(String(10), ForeignKey("goods_nomenclature.goods_code"), nullable=False)
     origin_group = Column(String(50), nullable=False)
     measure_type = Column(String(10), nullable=False)
-    duty_components = Column(JSONB, nullable=False)  # Array of duty components
+    duty_components = Column(JSON, nullable=False)  # Array of duty components
     legal_base_id = Column(String(50), nullable=False)
     legal_base_title = Column(Text, nullable=False)
     valid_from = Column(DateTime, nullable=False)
@@ -75,7 +72,7 @@ class MeasuresExport(Base):
     goods_code = Column(String(10), ForeignKey("goods_nomenclature.goods_code"), nullable=False)
     destination_group = Column(String(50), nullable=False)
     measure_type = Column(String(10), nullable=False)
-    duty_components = Column(JSONB, nullable=False)  # Array of duty components
+    duty_components = Column(JSON, nullable=False)  # Array of duty components
     legal_base_id = Column(String(50), nullable=False)
     legal_base_title = Column(Text, nullable=False)
     valid_from = Column(DateTime, nullable=False)
@@ -103,7 +100,7 @@ class MeasureConditions(Base):
     threshold_value = Column(Float, nullable=True)
     threshold_unit = Column(String(20), nullable=True)
     notes = Column(Text, nullable=True)
-    box44_codes = Column(JSONB, nullable=True)  # Array of box44 codes
+    box44_codes = Column(JSON, nullable=True)  # Array of box44 codes
     
     # Relationships
     goods_nomenclature = relationship("GoodsNomenclature", back_populates="measure_conditions")
