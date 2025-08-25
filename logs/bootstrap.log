@@ -1,0 +1,76 @@
+2025-08-25 22:50:38,643 - __main__ - INFO - Starting Trade Compliance API simple bootstrap
+2025-08-25 22:50:38,643 - __main__ - INFO - Created directory: data/raw
+2025-08-25 22:50:38,643 - __main__ - INFO - Created directory: data/extracted
+2025-08-25 22:50:38,643 - __main__ - INFO - Created directory: data/staging
+2025-08-25 22:50:38,643 - __main__ - INFO - Created directory: data/processed
+2025-08-25 22:50:38,643 - __main__ - INFO - Created directory: data/backups
+2025-08-25 22:50:38,643 - __main__ - INFO - Created directory: logs
+2025-08-25 22:50:38,643 - __main__ - INFO - Created directory: models
+2025-08-25 22:50:38,643 - __main__ - INFO - All directories created successfully
+2025-08-25 22:50:38,644 - __main__ - INFO - Setting up database schema
+2025-08-25 22:50:38,930 - db.session - ERROR - Database initialization failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:50:38,930 - __main__ - ERROR - Failed to setup database: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:50:38,930 - __main__ - ERROR - Bootstrap failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:50:50,319 - __main__ - INFO - Starting Trade Compliance API simple bootstrap
+2025-08-25 22:50:50,319 - __main__ - INFO - Created directory: data/raw
+2025-08-25 22:50:50,319 - __main__ - INFO - Created directory: data/extracted
+2025-08-25 22:50:50,319 - __main__ - INFO - Created directory: data/staging
+2025-08-25 22:50:50,319 - __main__ - INFO - Created directory: data/processed
+2025-08-25 22:50:50,319 - __main__ - INFO - Created directory: data/backups
+2025-08-25 22:50:50,319 - __main__ - INFO - Created directory: logs
+2025-08-25 22:50:50,319 - __main__ - INFO - Created directory: models
+2025-08-25 22:50:50,319 - __main__ - INFO - All directories created successfully
+2025-08-25 22:50:50,319 - __main__ - INFO - Setting up database schema
+2025-08-25 22:50:50,367 - db.session - ERROR - Database initialization failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:50:50,367 - __main__ - ERROR - Failed to setup database: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:50:50,367 - __main__ - ERROR - Bootstrap failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:51:11,266 - __main__ - INFO - Starting Trade Compliance API simple bootstrap
+2025-08-25 22:51:11,267 - __main__ - INFO - Created directory: data/raw
+2025-08-25 22:51:11,267 - __main__ - INFO - Created directory: data/extracted
+2025-08-25 22:51:11,267 - __main__ - INFO - Created directory: data/staging
+2025-08-25 22:51:11,267 - __main__ - INFO - Created directory: data/processed
+2025-08-25 22:51:11,267 - __main__ - INFO - Created directory: data/backups
+2025-08-25 22:51:11,267 - __main__ - INFO - Created directory: logs
+2025-08-25 22:51:11,267 - __main__ - INFO - Created directory: models
+2025-08-25 22:51:11,267 - __main__ - INFO - All directories created successfully
+2025-08-25 22:51:11,267 - __main__ - INFO - Setting up database schema
+2025-08-25 22:51:11,318 - db.session - ERROR - Database initialization failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:51:11,318 - __main__ - ERROR - Failed to setup database: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:51:11,318 - __main__ - ERROR - Bootstrap failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:51:37,769 - __main__ - INFO - Starting Trade Compliance API simple bootstrap
+2025-08-25 22:51:37,770 - __main__ - INFO - Created directory: data/raw
+2025-08-25 22:51:37,770 - __main__ - INFO - Created directory: data/extracted
+2025-08-25 22:51:37,770 - __main__ - INFO - Created directory: data/staging
+2025-08-25 22:51:37,770 - __main__ - INFO - Created directory: data/processed
+2025-08-25 22:51:37,770 - __main__ - INFO - Created directory: data/backups
+2025-08-25 22:51:37,770 - __main__ - INFO - Created directory: logs
+2025-08-25 22:51:37,770 - __main__ - INFO - Created directory: models
+2025-08-25 22:51:37,770 - __main__ - INFO - All directories created successfully
+2025-08-25 22:51:37,770 - __main__ - INFO - Setting up database schema
+2025-08-25 22:51:37,818 - db.session - ERROR - Database initialization failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:51:37,818 - __main__ - ERROR - Failed to setup database: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-25 22:51:37,818 - __main__ - ERROR - Bootstrap failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  role "tarco" does not exist
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

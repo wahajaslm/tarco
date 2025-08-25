@@ -1,0 +1,404 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/trade_response.schema.json",
+  "title": "TradeComplianceResponse",
+  "type": "object",
+  "required": ["query_parameters", "deterministic_values"],
+  "properties": {
+    "query_meta": {
+      "type": "object",
+      "properties": {
+        "query_date": { "type": "string", "format": "date" }
+      },
+      "additionalProperties": false
+    },
+    "query_parameters": {
+      "type": "object",
+      "required": ["hs_code", "origin", "destination"],
+      "properties": {
+        "hs_code": { "type": "string", "pattern": "^[0-9]{4,10}$" },
+        "origin": { "type": "string", "minLength": 2, "maxLength": 3 },
+        "destination": { "type": "string", "minLength": 2, "maxLength": 3 },
+        "product_description": { "type": "string" },
+        "incoterm": { "type": "string" },
+        "currency": { "type": "string", "minLength": 3, "maxLength": 3 }
+      },
+      "additionalProperties": false
+    },
+    "classification_meta": {
+      "type": "object",
+      "properties": {
+        "method": { "type": "string", "enum": ["retrieval_rerank_calibrate", "provided_by_user"] },
+        "confidence": { "type": ["number", "null"] },
+        "abstained": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "deterministic_values": {
+      "type": "object",
+      "required": ["goods_nomenclature_en", "import_measures", "vat_rates", "provenance"],
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "source_system": { "type": "string" },
+            "dataset_version": { "type": "string" },
+            "last_updated": { "type": "string", "format": "date" }
+          },
+          "additionalProperties": false
+        },
+        "goods_nomenclature_en": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["goods_code", "description", "level", "validity_start_date", "is_leaf"],
+            "properties": {
+              "goods_code": { "type": "string" },
+              "description": { "type": "string" },
+              "level": { "type": "integer" },
+              "validity_start_date": { "type": "string", "format": "date" },
+              "validity_end_date": { "type": ["string", "null"], "format": "date" },
+              "is_leaf": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "import_measures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["goods_code", "origin_group", "measure_type", "duty_components", "applicability", "legal_base"],
+            "properties": {
+              "goods_code": { "type": "string" },
+              "origin_group": { "type": "string" },
+              "measure_type": { "type": "string" },
+              "duty_components": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["type", "value", "unit"],
+                  "properties": {
+                    "type": { "type": "string", "enum": ["ad_valorem", "specific", "compound"] },
+                    "value": { "type": "number" },
+                    "unit": { "type": "string", "enum": ["percent", "eur/100kg", "eur/unit", "mixed"] }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "preference_scheme": { "type": ["string", "null"] },
+              "rules_of_origin": { "type": ["string", "null"] },
+              "applicability": {
+                "type": "object",
+                "required": ["valid_from"],
+                "properties": {
+                  "valid_from": { "type": "string", "format": "date" },
+                  "valid_to": { "type": ["string", "null"], "format": "date" }
+                },
+                "additionalProperties": false
+              },
+              "legal_base": {
+                "type": "object",
+                "required": ["id", "title"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "title": { "type": "string" }
+                },
+                "additionalProperties": false
+              },
+              "footnote_code": { "type": ["string", "null"] },
+              "cond_cert_code": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "export_measures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["goods_code", "destination_group", "measure_type", "duty_components", "applicability", "legal_base"],
+            "properties": {
+              "goods_code": { "type": "string" },
+              "destination_group": { "type": "string" },
+              "measure_type": { "type": "string" },
+              "duty_components": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["type", "value", "unit"],
+                  "properties": {
+                    "type": { "type": "string", "enum": ["ad_valorem", "specific", "compound"] },
+                    "value": { "type": "number" },
+                    "unit": { "type": "string", "enum": ["percent", "eur/100kg", "eur/unit", "mixed"] }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "applicability": {
+                "type": "object",
+                "required": ["valid_from"],
+                "properties": {
+                  "valid_from": { "type": "string", "format": "date" },
+                  "valid_to": { "type": ["string", "null"], "format": "date" }
+                },
+                "additionalProperties": false
+              },
+              "legal_base": {
+                "type": "object",
+                "required": ["id", "title"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "title": { "type": "string" }
+                },
+                "additionalProperties": false
+              },
+              "footnote_code": { "type": ["string", "null"] },
+              "cond_cert_code": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "applicable_rate_resolution": {
+          "type": "object",
+          "properties": {
+            "preference_possible": { "type": "boolean" },
+            "required_proof": { "type": ["string", "null"] },
+            "chosen_measure_origin": { "type": ["string", "null"] },
+            "chosen_duty_rate_percent": { "type": ["number", "null"] },
+            "fallback_if_no_proof_percent": { "type": ["number", "null"] }
+          },
+          "additionalProperties": false
+        },
+        "measure_conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["certificate_code", "action"],
+            "properties": {
+              "certificate_code": { "type": "string" },
+              "box44_codes": { "type": "array", "items": { "type": "string" } },
+              "action": { "type": "string" },
+              "threshold_value": { "type": ["number", "null"] },
+              "threshold_unit": { "type": ["string", "null"] },
+              "notes": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "certificates_and_documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "mandatory_if"],
+            "properties": {
+              "name": { "type": "string" },
+              "issuer": { "type": ["string", "null"] },
+              "mandatory_if": { "type": "string" },
+              "fields": { "type": "object", "additionalProperties": { "type": "string" } }
+            },
+            "additionalProperties": false
+          }
+        },
+        "compliance_requirements": {
+          "type": "object",
+          "properties": {
+            "product_safety_framework": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["regulation", "applies"],
+                "properties": {
+                  "regulation": { "type": "string" },
+                  "applies": { "type": "boolean" },
+                  "notes": { "type": "array", "items": { "type": "string" } }
+                },
+                "additionalProperties": false
+              }
+            },
+            "reach_restrictions_annex_xvii": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["entry", "required"],
+                "properties": {
+                  "entry": { "type": "integer" },
+                  "substance_scope": { "type": ["string", "null"] },
+                  "limit": { "type": ["string", "null"] },
+                  "article_relevance": { "type": ["string", "null"] },
+                  "required": { "type": ["boolean", "string"] }
+                },
+                "additionalProperties": false
+              }
+            },
+            "toy_path_conditional": {
+              "type": "object",
+              "properties": {
+                "trigger": { "type": ["string", "null"] },
+                "directive": { "type": ["string", "null"] },
+                "standards": { "type": "array", "items": { "type": "string" } },
+                "marking": { "type": "array", "items": { "type": "string" } }
+              },
+              "additionalProperties": false
+            },
+            "labelling": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        },
+        "recommended_test_methods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["purpose", "method"],
+            "properties": {
+              "purpose": { "type": "string" },
+              "method": { "type": "string" },
+              "acceptance": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "special_measures": {
+          "type": "object",
+          "properties": {
+            "quotas": { "type": ["string", "null"] },
+            "anti_dumping": { "type": ["string", "null"] },
+            "countervailing": { "type": ["string", "null"] },
+            "safeguards": { "type": ["string", "null"] },
+            "suspensions": { "type": ["string", "null"] }
+          },
+          "additionalProperties": false
+        },
+        "geographical_areas_origin": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["member_country"],
+            "properties": {
+              "member_country": { "type": "string" },
+              "country_group": { "type": ["string", "null"] },
+              "description": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "geographical_areas_destination": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["member_country"],
+            "properties": {
+              "member_country": { "type": "string" },
+              "country_group": { "type": ["string", "null"] },
+              "description": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "vat_rates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["country", "standard_rate_percent"],
+            "properties": {
+              "country": { "type": "string" },
+              "standard_rate_percent": { "type": "number" },
+              "reduced_rate_1_percent": { "type": ["number", "null"] },
+              "valid_from": { "type": ["string", "null"], "format": "date" },
+              "valid_to": { "type": ["string", "null"], "format": "date" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "exchange_rates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["iso", "rate", "rate_date", "source"],
+            "properties": {
+              "iso": { "type": "string" },
+              "rate": { "type": "number" },
+              "rate_date": { "type": "string", "format": "date" },
+              "source": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "required": ["legal_bases"],
+          "properties": {
+            "legal_bases": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "title"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "title": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "completeness": {
+          "type": "object",
+          "properties": {
+            "has_reach_mapping": { "type": "boolean" },
+            "has_test_methods": { "type": "boolean" },
+            "all_measures_have_legal_base": { "type": "boolean" },
+            "all_required_vat_present": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["field", "reason"],
+            "properties": {
+              "field": { "type": "string" },
+              "reason": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "annotations_llm": {
+      "type": "object",
+      "properties": {
+        "human_summary": { "type": ["string", "null"] },
+        "certificate_explanations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "what_it_is": { "type": "string" },
+              "when_required": { "type": "string" },
+              "issuer": { "type": "string" },
+              "note": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "compliance_notes": { "type": "array", "items": { "type": "string" } },
+        "safety": {
+          "type": "object",
+          "properties": {
+            "hallucination_guard": { "type": "boolean" },
+            "disclaimer": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

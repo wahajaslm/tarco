@@ -1,0 +1,54 @@
+# WORKFLOW: Docker container for the FastAPI application.
+# Used by: Production deployment, development environment, CI/CD pipelines
+# Build process:
+# 1. Base Python 3.11 image
+# 2. Install system dependencies (gcc, curl)
+# 3. Install Python dependencies from requirements.txt
+# 4. Copy application code
+# 5. Create non-root user for security
+# 6. Configure health checks and startup command
+#
+# Container flow: Build image -> Run container -> Health check -> Ready for requests
+# Orchestrated by docker-compose with other services (postgres, redis, ollama, etc.)
+
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+# Set work directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy project
+COPY . .
+
+# Pre-download ML models during build
+RUN python scripts/preload_models.py
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app && \
+    chown -R app:app /app
+USER app
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/healthz || exit 1
+
+# Run the application
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
