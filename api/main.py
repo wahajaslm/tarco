@@ -6,10 +6,10 @@ Trade Compliance API - Working version with health router.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-import time
 
-# Add core configuration
+# Add core configuration and routers
 from core.config import settings
+from api.routers import health
 
 # Configure logging
 logging.basicConfig(level=getattr(logging, settings.log_level))
@@ -31,10 +31,14 @@ app.add_middleware(
     allow_headers=settings.allowed_headers,
 )
 
-# Include health router
-from api.routers import health
+# Expose health checks both at root and versioned paths
 app.include_router(health.router, prefix=settings.api_v1_prefix)
-logger.info("Health router included")
+logger.info("Health router included with API prefix")
+
+@app.get("/healthz")
+async def root_health_check():
+    """Root-level health endpoint for external monitors."""
+    return await health.health_check()
 
 # Include deterministic router
 try:
@@ -43,15 +47,6 @@ try:
     logger.info("Deterministic router included")
 except Exception as e:
     logger.warning(f"Failed to include deterministic router: {e}")
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy", "timestamp": time.time()}
-
-@app.post("/test")
-async def test(request: dict):
-    logger.info("Test endpoint called")
-    return {"status": "success", "data": request}
 
 if __name__ == "__main__":
     import uvicorn
