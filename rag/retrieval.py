@@ -10,12 +10,15 @@
 # This is the second step in RAG: query -> similar documents
 # Returns candidates for reranking and classification.
 
-from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, MatchValue, PointStruct
-from typing import List, Dict, Any, Optional
 import logging
-from rag.embeddings import get_embedding_model
+import uuid
+from typing import Any, Dict, List, Optional
+
+from qdrant_client import QdrantClient
+from qdrant_client.models import FieldCondition, Filter, MatchValue, PointStruct, Distance, VectorParams
+
 from core.config import settings
+from rag.embeddings import get_embedding_model
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +84,9 @@ class VectorRetriever:
             
             # Prepare points for Qdrant
             points = []
-            for i, (embedding, metadata) in enumerate(zip(embeddings, metadatas)):
+            for embedding, metadata in zip(embeddings, metadatas):
                 points.append(
-                    PointStruct(id=i, vector=embedding.tolist(), payload=metadata)
+                    PointStruct(id=str(uuid.uuid4()), vector=embedding.tolist(), payload=metadata)
                 )
             
             # Upload to Qdrant

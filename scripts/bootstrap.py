@@ -15,26 +15,21 @@
 Bootstrap script for Trade Compliance API setup and data processing.
 """
 
-import os
-import sys
-import logging
 import argparse
-from pathlib import Path
-from typing import List, Dict, Any
+import logging
 import subprocess
-import time
+import sys
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from etl.ingest_zip import main as ingest_zip
-from etl.transform_canonical import main as transform_canonical
-from etl.validators import validate_staging_data
-from db.session import init_db, get_db
-from rag.retrieval import vector_retriever
-from rag.embeddings import get_embedding_model
-from core.config import settings
+from etl.ingest_zip import main as ingest_zip  # noqa: E402
+from db.session import get_db, init_db  # noqa: E402
+from rag.embeddings import get_embedding_model  # noqa: E402
+from rag.retrieval import vector_retriever  # noqa: E402
 
 # Configure logging
 logging.basicConfig(

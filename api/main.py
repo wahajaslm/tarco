@@ -40,13 +40,14 @@ async def root_health_check():
     """Root-level health endpoint for external monitors."""
     return await health.health_check()
 
-# Include deterministic router
+# Include deterministic and chat routers
 try:
-    from api.routers import deterministic
+    from api.routers import deterministic, chat
     app.include_router(deterministic.router, prefix=settings.api_v1_prefix)
-    logger.info("Deterministic router included")
+    app.include_router(chat.router, prefix=f"{settings.api_v1_prefix}/chat")
+    logger.info("Deterministic and chat routers included")
 except Exception as e:
-    logger.warning(f"Failed to include deterministic router: {e}")
+    logger.warning(f"Failed to include routers: {e}")
 
 if __name__ == "__main__":
     import uvicorn

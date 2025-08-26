@@ -11,10 +11,13 @@
 # Safety flow: LLM prompt -> Safety instructions -> Factual response -> Validation
 # Ensures LLM only paraphrases existing data, never invents new facts or numbers.
 
-from typing import Any, List, Optional
 import logging
-from api.schemas.response import TradeComplianceResponse, AnnotationsLLM, CertificateExplanation, SafetyInfo
+from typing import Any, List, Optional
+
+import httpx
 import ollama
+
+from api.schemas.response import AnnotationsLLM, CertificateExplanation, SafetyInfo, TradeComplianceResponse
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -225,12 +228,19 @@ class ExplainerService:
                 options={
                     "temperature": 0.1,  # Low temperature for factual responses
                     "num_predict": max_tokens,
-                    "stop": ["\n\n", "Note:", "Important:"]
-                }
+                    "stop": ["\n\n", "Note:", "Important:"],
+                },
+                timeout=30,
             )
-            
-            return response['response'].strip()
-            
+
+            return response["response"].strip()
+
+        except httpx.TimeoutException:
+            logger.error("LLM call timed out")
+            return "LLM call timed out"
+        except httpx.HTTPError as e:
+            logger.error(f"LLM HTTP error: {e}")
+            return "LLM service unavailable"
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
             return None
