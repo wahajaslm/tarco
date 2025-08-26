@@ -86,7 +86,7 @@ class VectorRetriever:
             points = []
             for embedding, metadata in zip(embeddings, metadatas):
                 points.append(
-                    PointStruct(id=uuid.uuid4(), vector=embedding.tolist(), payload=metadata)
+                    PointStruct(id=str(uuid.uuid4()), vector=embedding.tolist(), payload=metadata)
                 )
             
             # Upload to Qdrant
