@@ -217,7 +217,7 @@ class TestCottonHoodieWorkflow:
                 self.store.pop(key, None)
 
         chat.redis_client = FakeRedis()
-
+        
         async def dummy_extract_query_parameters(message: str) -> Dict[str, Any]:
             return {
                 "origin": "PK",
